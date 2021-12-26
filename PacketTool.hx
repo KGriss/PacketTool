@@ -23,22 +23,30 @@ class PacketTool
 		{
 			PacketTool.localID = localID;
 		}
+		trace("LocalID", PacketTool.localID);
 
 		PacketTool.isClient = isClient;
 	}
 
 	public static function createPacket(eventName:String, arguments:Array<Any>):String
 	{
-		var argumentsString = "";
+		var argumentsForPacket = "";
 		for (arg in arguments)
 		{
-			argumentsString += Std.string(arg) + ":";
+			argumentsForPacket += Std.string(arg) + ":";
 		}
-		argumentsString = argumentsString.substring(0, argumentsString.length - 1);
+		trace("argumentsForPacket", argumentsForPacket);
+		argumentsForPacket = argumentsForPacket.substring(0, argumentsForPacket.length - 1);
+		trace("argumentsForPacket", argumentsForPacket);
 
-		var packet = /* (if (isClient) "1" else "0") + */ localID + ";" + Std.string(eventsNames.indexOf(eventName)) + ";" + argumentsString;
+		var packet = /* (if (isClient) "1" else "0") + */ localID
+			+ ";"
+			+ Std.string(eventsNames.indexOf(eventName))
+			+ ";"
+			+ argumentsForPacket;
 
-		packet = packet.substring(0, packet.length - 1);
+		// packet = packet.substring(0, packet.length - 1);
+		trace("Packet to send", packet);
 
 		return packet;
 	}
@@ -52,17 +60,19 @@ class PacketTool
 	public static function parsePacket(packet:String):Void
 	{
 		trace(packet);
-		var substrings = packet.split(";");
+		var substrings:Array<String> = packet.split(";");
 
 		// var fromClient = Std.parseInt(substrings[0].substr(0, 1));
-		var id = substrings[0].substr(1);
-		var eventID = Std.parseInt(substrings[1]);
-		var arguments = substrings[2].split(":");
+		var id:String = substrings[0]; // .substr(1);
+		var eventID:Int = Std.parseInt(substrings[1]);
+		var arguments:Array<String> = substrings[2].split(":");
 
 		// events[eventID](arguments);
 
+		trace(id, localID);
 		if (id != localID)
 		{
+			trace("id != localID : true");
 			events[eventID](arguments, id);
 		}
 	}
