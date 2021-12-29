@@ -8,10 +8,21 @@ class PacketTool
 	// Events are stored in 2 differents arrays : the 1st for the names, the 2nd for the functions
 	// In packets, ID are sent. They are the index of the events/events names in the arrays.
 	public static var eventsNames = new Array<String>();
-	public static var events = new Array<(Array<String>, senderID:String) -> Void>();
+	public static var events = new Array<(data:Array<String>, senderID:String, packet:String) -> Void>();
 
 	public static var localID:String;
 	public static var isClient:Bool;
+
+	private static var _argumentsForPacket:String;
+	private static var _packet:String;
+
+	private static var _substrings:Array<String>;
+	private static var _id:String;
+	private static var _eventID:Int;
+	private static var _arguments:Array<String>;
+
+	private static inline final _CHARS_LIST:String = "1234567890AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn";
+	private static var _tempID:String;
 
 	public static function init(?localID:String, ?isClient:Bool = true)
 	{
@@ -23,70 +34,72 @@ class PacketTool
 		{
 			PacketTool.localID = localID;
 		}
-		trace("LocalID", PacketTool.localID);
 
 		PacketTool.isClient = isClient;
 	}
 
+	/*public static function authentificationPacket(packet:String):String
+		{
+			return createPacket("Authentification", []);
+	}*/
 	public static function createPacket(eventName:String, arguments:Array<Any>):String
 	{
-		var argumentsForPacket = "";
+		_argumentsForPacket = "";
 		for (arg in arguments)
 		{
-			argumentsForPacket += Std.string(arg) + ":";
+			_argumentsForPacket += Std.string(arg) + ":";
 		}
-		trace("argumentsForPacket", argumentsForPacket);
-		argumentsForPacket = argumentsForPacket.substring(0, argumentsForPacket.length - 1);
-		trace("argumentsForPacket", argumentsForPacket);
+		_argumentsForPacket = _argumentsForPacket.substr(0, _argumentsForPacket.length - 1);
 
-		var packet = /* (if (isClient) "1" else "0") + */ localID
-			+ ";"
-			+ Std.string(eventsNames.indexOf(eventName))
-			+ ";"
-			+ argumentsForPacket;
+		_packet = // (if (isClient) "1" else "0") +
+			localID + ";" + Std.string(eventsNames.indexOf(eventName)) + ";" + _argumentsForPacket;
 
-		// packet = packet.substring(0, packet.length - 1);
-		trace("Packet to send", packet);
-
-		return packet;
+		return _packet;
 	}
 
-	public static function registerEvent(name:String, onEvent:(data:Array<String>, senderID:String) -> Void)
+	public static function registerEvent(name:String, ?onEvent:(data:Array<String>, senderID:String, packet:String) -> Void)
 	{
 		eventsNames.push(name);
-		events.push(onEvent);
+		if (onEvent != null)
+		{
+			events.push(onEvent);
+		}
 	}
 
-	public static function parsePacket(packet:String):Void
+	public static function parsePacket(packet:String):String
 	{
-		trace(packet);
-		var substrings:Array<String> = packet.split(";");
+		_substrings = packet.split(";");
 
 		// var fromClient = Std.parseInt(substrings[0].substr(0, 1));
-		var id:String = substrings[0]; // .substr(1);
-		var eventID:Int = Std.parseInt(substrings[1]);
-		var arguments:Array<String> = substrings[2].split(":");
+		_id = if (_substrings[0] != null) _substrings[0] else ""; // .substr(1);
+		_eventID = if (_substrings[1] != null) Std.parseInt(_substrings[1]) else 0;
+		_arguments = if (_substrings[2] != null) _substrings[2].split(":") else [];
 
-		// events[eventID](arguments);
-
-		trace(id, localID);
-		if (id != localID)
+		if (events[_eventID] != null)
 		{
-			trace("id != localID : true");
-			events[eventID](arguments, id);
+			events[_eventID](_arguments, _id, packet);
+			return eventsNames[_eventID];
 		}
+		else
+		{
+			return null;
+		}
+
+		/*if (id != localID)
+			{
+				events[eventID](arguments, id);
+		}*/
 	}
 
 	public static inline function generateID(length:Int = 4):String
 	{
-		var charList = "1234567890AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn";
-		var tempID = "";
+		_tempID = "";
 
 		for (i in 0...length)
 		{
-			tempID += charList.charAt(Std.random(charList.length));
+			_tempID += _CHARS_LIST.charAt(Std.random(_CHARS_LIST.length));
 		}
 
-		return tempID;
+		return _tempID;
 	}
 }
